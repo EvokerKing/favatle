@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta charset="UTF-8">
+        <title>TopTen</title>
+    <style>
+        body{font-family:Georgia, 'Times New Roman', Times, serif;max-width:480px;margin:auto;padding:16px} 
+        body{text-transform: uppercase;}  
+        .slot{display:flex;justify-content:space-between;padding:10px;margin:4px 0;border:1px solid #888;border-radius:8px}
+        .hit{background:#c8f0d0;color:#000}
+        .miss{background:#f6c8c8;color:#000}
+        header {
+            background-color: #154456;
+            color: white;
+            text-align: center;
+            padding: 20px;
+            font-family: Georgia, 'Times New Roman', Times, serif;
+            font-size: 2em;
+            border-bottom: 4px solid #0a1d25;
+        }
+        input[type="text"] {
+            padding: 10px;
+            font-size: 16px;
+            border: 2px solid #154456;
+            border-radius: 8px;
+            outline: none;}
+            button {
+                padding: 10px 20px;
+                font-size: 16px;
+                background-color: #154456;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                cursor: pointer;}
+    </style></head>
+    <body style="background-color: #75adc0">
+        <header>TopTen</header>
+        <h2 id="title"></h2>
+        <div id="list"></div>
+        <input type="text" id="guess" placeholder="Type a guess..." autocomplete="off">
+        <button id="go">Guess</button>
+        <p id="info"></p>
+    </body>
+</html>
+
+<script type="module">
+import {DAYS} from "./list.js";
+const MAX_STRIKES = 5;
+const norm = s => s.toUpperCase().trim()
+const $ = id => document.getElementById(id);
+
+const day0 = new Date();
+const today = day0.getFullYear() + "-" +
+    String(day0.getMonth() + 1).padStart(2, "0") + "-" +
+    String(day0.getDate()).padStart(2, "0");
+
+const keys = Object.keys(DAYS).sort();
+const day = DAYS[today] || DAYS[keys[keys.length - 1]];
+
+let found = new Set(), tried = new Set(), strikes = 0, over = false
+
+function draw() {
+    $("list").innerHTML = "";
+    day.items.forEach((item, pos) => {
+        const d = document.createElement("div");
+        const show = found.has(pos) || over;
+        d.className = "slot" + (found.has(pos) ? " hit" : over ? " miss": "");
+        d.textContent = (pos + 1) + ". " + (show ? item.name  + " (" + item.value + ")" : "???");
+        $("list").append(d);
+    });
+    $("info").textContent = over
+        ? (found.size === day.items.length ? "Congratulations!" : "Game over: " + found.size + "/" + day.items.length)
+        : "Strikes: " + strikes + "/" + MAX_STRIKES;
+}
+
+function guess() {
+    if (over) return;
+    const g = norm($("guess").value);
+    $("guess").value = "";
+    $("guess").focus();
+    if (!g) return;
+    if (tried.has(g)) {
+        $("info").textContent = "Already guessed that. Strikes: " + strikes + "/" + MAX_STRIKES
+        return;
+    }
+    tried.add(g);
+    const n = day.items.findIndex(item => [item.name, ...(item.alt || [])].some(a => norm(a) === g))
+    if (n >= 0) found.add(n); else strikes++;
+    if (found.size === day.items.length || strikes >= MAX_STRIKES) over = true;
+    draw();
+}
+
+$("title").textContent = day.title;
+$("go").onclick = guess;
+$("guess").onkeydown = e => {if (e.key === "Enter") guess(); };
+draw();
+</script>
+</body></html>
